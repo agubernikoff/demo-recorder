@@ -4,8 +4,6 @@ Records polished product demo videos from a config file. Opens a real browser wi
 
 ---
 
-.
-
 ## Requirements
 
 - Node.js
