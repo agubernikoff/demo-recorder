@@ -50,20 +50,13 @@ All mouse movement goes through `moveTo(page, x, y)`. It tracks `_mouseX`/`_mous
 
 ## Key patterns
 
-### Non-blocking (fire-and-forget) async work
-Use an immediately-invoked async arrow with no `await`:
-```js
-(async () => {
-  await someAsyncThing();
-})();
-```
-Used by `triggerScroll` in `hoverAll` to fire a background element scroll without blocking hover iteration.
-
 ### "to": "bottom" for scrollElement
 When `to === "bottom"`, the step reads `el.scrollHeight - el.clientHeight` via `page.$eval` before calling `smoothScrollElement`. This pattern should be reused for any future step that needs runtime element dimensions.
 
 ### triggerScroll on hoverAll
 Fires once per `hoverAll` invocation when the first item whose `box.y + box.height/2 > VIEWPORT.height * threshold` is reached. The `scrollTriggered` boolean prevents double-firing. Default threshold is `0.6`.
+
+When triggered: the hover loop breaks immediately, a Promise is stored in `scrollPromise`, and after the loop `await scrollPromise` blocks until the animation completes. This ensures the next step never starts while the scroll is still running. Do not revert to fire-and-forget — sequential behavior after the scroll is intentional.
 
 ### parallel + sequence
 `parallel` uses `Promise.all`. `sequence` is a sequential for-loop over `runStep`. These are safe to nest arbitrarily. The only caveat: avoid putting two hover steps (which both call `moveTo`) in parallel branches — they share the `_mouseX`/`_mouseY` globals and will corrupt each other's Bezier paths.

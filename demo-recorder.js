@@ -271,39 +271,56 @@ async function runStep(page, step) {
         );
 
         let scrollTriggered = false;
+        let scrollPromise = null;
+        const isCascade = !!step.cascade;
+
         for (const { el } of withDocTop) {
-          if (step.scrollContainer) {
-            const containerEl = await page.$(step.scrollContainer);
-            if (containerEl) await scrollToElement(page, containerEl);
-            const targetScrollTop = await getScrollTopToRevealInContainer(page, step.scrollContainer, el);
-            if (targetScrollTop !== null) {
-              await smoothScrollElement(page, step.scrollContainer, targetScrollTop, 600);
-              await sleep(80);
+          if (!isCascade) {
+            if (step.scrollContainer) {
+              const containerEl = await page.$(step.scrollContainer);
+              if (containerEl) await scrollToElement(page, containerEl);
+              const targetScrollTop = await getScrollTopToRevealInContainer(page, step.scrollContainer, el);
+              if (targetScrollTop !== null) {
+                await smoothScrollElement(page, step.scrollContainer, targetScrollTop, 600);
+                await sleep(80);
+              }
+            } else {
+              await scrollToElement(page, el);
             }
-          } else {
-            await scrollToElement(page, el);
           }
+
           const box = await el.boundingBox();
           if (!box) continue;
 
-          // Fire a background scroll once the mouse reaches the lower portion of the viewport
+          // When the mouse reaches the threshold, stop hovering immediately and scroll
           if (step.triggerScroll && !scrollTriggered) {
             const threshold = step.triggerScroll.threshold ?? 0.6;
             if (box.y + box.height / 2 > VIEWPORT.height * threshold) {
               scrollTriggered = true;
-              (async () => {
+              scrollPromise = (async () => {
                 let target = step.triggerScroll.to;
                 if (target === "bottom") {
                   target = await page.$eval(step.triggerScroll.selector, (el) => el.scrollHeight - el.clientHeight);
                 }
                 await smoothScrollElement(page, step.triggerScroll.selector, target || 0, step.triggerScroll.duration || 1000);
               })();
+              break;
             }
           }
 
-          await moveTo(page, box.x + box.width / 2, box.y + box.height / 2);
-          await sleep(jitter(dwell));
+          if (isCascade) {
+            // Snap directly to each element — no bezier curve — so hover states
+            // light up in rapid succession without movement overhead.
+            await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+            await sleep(dwell);
+          } else {
+            await moveTo(page, box.x + box.width / 2, box.y + box.height / 2);
+            await sleep(jitter(dwell));
+          }
         }
+
+        // Wait for the triggered scroll to finish before moving to the next step
+        if (scrollPromise) await scrollPromise;
       } catch (e) {
         console.warn(
           `   ⚠️  hoverAll failed (${selector}): ${e.message.split("\n")[0]}`,

@@ -92,7 +92,7 @@ Finds all matching elements, sorts them top-to-bottom, and hovers each one.
 **Options:**
 
 - `scrollContainer` — scroll a specific overflow container to reveal each item instead of scrolling the page
-- `triggerScroll` — fire a background element scroll once the mouse reaches a threshold Y position in the viewport
+- `triggerScroll` — stop hovering and scroll an element once the mouse reaches a threshold Y position in the viewport; the next step waits for the scroll to complete
 
 ```json
 {
@@ -109,7 +109,7 @@ Finds all matching elements, sorts them top-to-bottom, and hovers each one.
 }
 ```
 
-`triggerScroll` fires once — non-blocking — when the first item whose center Y exceeds `threshold × viewportHeight` is reached. Default threshold: `0.6`.
+`triggerScroll` fires once when the first item whose center Y exceeds `threshold × viewportHeight` is reached. Hovering stops immediately, the scroll animation runs, and the next step begins only after the scroll completes. Default threshold: `0.6`.
 
 ```json
 { "type": "hoverContainer", "selector": ".card-grid", "dwell": 800, "drift": true }
