@@ -9,7 +9,6 @@
     { "type": "wait", "wait": 2000 },
 
     { "type": "navigate", "url": "https://www.shirard.com/pages/about" },
-    { "type": "wait", "wait": 200 },
 
     {
       "type": "hoverAll",
@@ -18,13 +17,11 @@
     },
 
     { "type": "navigate", "url": "https://www.shirard.com/pages/services" },
-    { "type": "wait", "wait": 200 },
 
     { "type": "navigate", "url": "https://www.shirard.com/pages/brand" },
-    { "type": "wait", "wait": 200 },
 
     { "type": "navigate", "url": "https://www.shirard.com/pages/press" },
-    { "type": "wait", "wait": 200 },
+
     {
       "type": "hoverContainer",
       "selector": ".even-better-links-container",
