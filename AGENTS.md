@@ -33,7 +33,9 @@ All mouse movement goes through `moveTo(page, x, y)`. It tracks `_mouseX`/`_mous
 `runStep(page, step)` is a switch on `step.type`. It is recursive — `parallel` and `sequence` both call `runStep` on child steps. When adding a new step type, add a case here.
 
 ### Config globals
-`HOVER_DWELL`, `POST_SCROLL`, `VIEWPORT` are read from config at startup and used as defaults throughout. Do not hardcode timing values inside step handlers — reference these constants.
+`HOVER_DWELL`, `POST_SCROLL`, `VIEWPORT`, `AUTO_DISMISS` are read from config at startup and used as defaults throughout. Do not hardcode timing values inside step handlers — reference these constants.
+
+`AUTO_DISMISS` (`autoDismissPopups`, default `true`) gates the automatic `dismissPopups()` call that runs after the initial page load and after every `navigate` step. When `false`, the config is responsible for dismissing popups manually via `click` steps.
 
 ---
 

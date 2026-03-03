@@ -44,10 +44,11 @@ Discovers nav links automatically and scrolls + interacts with each page. `DEMO_
 ```json
 {
   "url": "https://example.com",
-  "output": "my-demo",
+  "output": "output/my-demo/my-demo",
   "viewport": { "width": 1280, "height": 800 },
   "hoverDwell": 500,
   "postScrollWait": 700,
+  "autoDismissPopups": true,
   "interactions": []
 }
 ```
@@ -55,10 +56,11 @@ Discovers nav links automatically and scrolls + interacts with each page. `DEMO_
 | Field | Default | Description |
 |---|---|---|
 | `url` | `https://example.com` | Starting URL |
-| `output` | `demo` | Output filename (no extension) |
+| `output` | `demo` | Output path without extension. Use `output/<name>/<name>` to group files in a subfolder. |
 | `viewport` | `1280×800` | Browser window size |
 | `hoverDwell` | `900ms` | Default hover duration |
 | `postScrollWait` | `1400ms` | Pause after page-level scrolls |
+| `autoDismissPopups` | `true` | Auto-dismiss popups after initial load and each `navigate`. Set to `false` to handle popups manually with `click` steps. |
 
 ---
 
