@@ -1,0 +1,65 @@
+{
+  "url": "https://www.shirard.com/",
+  "output": "output/shirard-demo/shirard-demo",
+  "viewport": { "width": 1280, "height": 800 },
+  "hoverDwell": 500,
+  "postScrollWait": 700,
+  "autoDismissPopups": false,
+  "interactions": [
+    { "type": "wait", "wait": 2000 },
+
+    { "type": "navigate", "url": "https://www.shirard.com/pages/about" },
+    { "type": "wait", "wait": 200 },
+
+    {
+      "type": "hoverAll",
+      "selector": ".pages-content-container > nav a",
+      "dwell": 700
+    },
+
+    { "type": "navigate", "url": "https://www.shirard.com/pages/services" },
+    { "type": "wait", "wait": 200 },
+
+    { "type": "navigate", "url": "https://www.shirard.com/pages/brand" },
+    { "type": "wait", "wait": 200 },
+
+    { "type": "navigate", "url": "https://www.shirard.com/pages/press" },
+    { "type": "wait", "wait": 200 },
+    {
+      "type": "hoverContainer",
+      "selector": ".even-better-links-container",
+      "dwell": 800,
+      "drift": false
+    },
+    {
+      "type": "hoverAll",
+      "selector": ".even-better-link",
+      "dwell": 250
+    },
+    { "type": "hover", "selector": ".listen-link", "dwell": 900 },
+
+    { "type": "navigate", "url": "https://www.shirard.com/even-better" },
+    { "type": "wait", "wait": 500 },
+
+    {
+      "type": "hoverContainer",
+      "selector": ".even-better-links-container",
+      "dwell": 800,
+      "drift": false
+    },
+    {
+      "type": "hoverAll",
+      "selector": ".even-better-link",
+      "dwell": 250,
+      "triggerScroll": {
+        "selector": ".even-better-content-container.page-content-portable-text-container",
+        "to": "bottom",
+        "duration": 2000,
+        "threshold": 0.95
+      }
+    },
+
+    { "type": "navigate", "url": "https://www.shirard.com/" },
+    { "type": "wait", "wait": 1500 }
+  ]
+}
