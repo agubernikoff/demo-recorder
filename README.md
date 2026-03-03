@@ -53,14 +53,14 @@ Discovers nav links automatically and scrolls + interacts with each page. `DEMO_
 }
 ```
 
-| Field | Default | Description |
-|---|---|---|
-| `url` | `https://example.com` | Starting URL |
-| `output` | `demo` | Output path without extension. Use `output/<name>/<name>` to group files in a subfolder. |
-| `viewport` | `1280×800` | Browser window size |
-| `hoverDwell` | `900ms` | Default hover duration |
-| `postScrollWait` | `1400ms` | Pause after page-level scrolls |
-| `autoDismissPopups` | `true` | Auto-dismiss popups after initial load and each `navigate`. Set to `false` to handle popups manually with `click` steps. |
+| Field               | Default               | Description                                                                                                              |
+| ------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `url`               | `https://example.com` | Starting URL                                                                                                             |
+| `output`            | `demo`                | Output path without extension. Use `output/<name>/<name>` to group files in a subfolder.                                 |
+| `viewport`          | `1280×800`            | Browser window size                                                                                                      |
+| `hoverDwell`        | `900ms`               | Default hover duration                                                                                                   |
+| `postScrollWait`    | `1400ms`              | Pause after page-level scrolls                                                                                           |
+| `autoDismissPopups` | `true`                | Auto-dismiss popups after initial load and each `navigate`. Set to `false` to handle popups manually with `click` steps. |
 
 ---
 
@@ -112,7 +112,12 @@ Finds all matching elements, sorts them top-to-bottom, and hovers each one.
 `triggerScroll` fires once when the first item whose center Y exceeds `threshold × viewportHeight` is reached. Hovering stops immediately, the scroll animation runs, and the next step begins only after the scroll completes. Default threshold: `0.6`.
 
 ```json
-{ "type": "hoverContainer", "selector": ".card-grid", "dwell": 800, "drift": true }
+{
+  "type": "hoverContainer",
+  "selector": ".card-grid",
+  "dwell": 800,
+  "drift": true
+}
 ```
 
 Hovers the container, then optionally drifts the mouse downward through it. Set `"drift": false` to hover without drifting.
@@ -134,11 +139,11 @@ Hovers the container, then optionally drifts the mouse downward through it. Set 
 
 `autoScroll` scrolls down the whole page in viewport-sized steps, interacting with visible elements at each stop.
 
-| Step | `duration` default |
-|---|---|
-| `scroll` | 1200ms |
-| `scrollToTop` | 1800ms |
-| `scrollToBottom` | 2000ms |
+| Step             | `duration` default |
+| ---------------- | ------------------ |
+| `scroll`         | 1200ms             |
+| `scrollToTop`    | 1800ms             |
+| `scrollToBottom` | 2000ms             |
 
 After each page scroll, the recorder waits `postScrollWait` ms before continuing.
 
