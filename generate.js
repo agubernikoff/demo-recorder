@@ -3,6 +3,7 @@
 // Reads a Remix app codebase, sends it to Claude, and generates a demo-recorder config.
 // Requires: ANTHROPIC_API_KEY env var
 
+require("dotenv").config();
 const Anthropic = require("@anthropic-ai/sdk");
 const fs = require("fs");
 const path = require("path");
