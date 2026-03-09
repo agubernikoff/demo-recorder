@@ -46,43 +46,61 @@ function jitter(ms, pct = 0.15) {
 // in between so the browser actually renders each intermediate position.
 // Runs the scroll animation entirely inside the browser via requestAnimationFrame
 // so it doesn't compete with Playwright's IPC channel during concurrent hover steps.
-async function smoothScrollElement(page, selector, targetScrollTop, durationMs = 1000) {
-  await page.evaluate(([sel, targetY, duration]) => {
-    return new Promise((resolve) => {
-      const container = document.querySelector(sel);
-      if (!container) return resolve();
-      const startY = container.scrollTop;
-      const delta = targetY - startY;
-      if (Math.abs(delta) < 10) return resolve();
-      const startTime = performance.now();
-      function frame(now) {
-        const t = Math.min((now - startTime) / duration, 1);
-        const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-        container.scrollTop = startY + delta * ease;
-        if (t < 1) requestAnimationFrame(frame);
-        else resolve();
-      }
-      requestAnimationFrame(frame);
-    });
-  }, [selector, targetScrollTop, durationMs]);
+async function smoothScrollElement(
+  page,
+  selector,
+  targetScrollTop,
+  durationMs = 1000,
+) {
+  await page.evaluate(
+    ([sel, targetY, duration]) => {
+      return new Promise((resolve) => {
+        const container = document.querySelector(sel);
+        if (!container) return resolve();
+        const startY = container.scrollTop;
+        const delta = targetY - startY;
+        if (Math.abs(delta) < 10) return resolve();
+        const startTime = performance.now();
+        function frame(now) {
+          const t = Math.min((now - startTime) / duration, 1);
+          const ease =
+            t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+          container.scrollTop = startY + delta * ease;
+          if (t < 1) requestAnimationFrame(frame);
+          else resolve();
+        }
+        requestAnimationFrame(frame);
+      });
+    },
+    [selector, targetScrollTop, durationMs],
+  );
 }
 
 // Returns the scrollTop needed to reveal `itemEl` inside the container
 // matched by `containerSel`, or null if it's already visible.
-async function getScrollTopToRevealInContainer(page, containerSel, itemEl, padding = 20) {
-  return await itemEl.evaluate((item, [sel, padding]) => {
-    const container = document.querySelector(sel);
-    if (!container) return null;
-    const itemRect = item.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
-    const relTop = itemRect.top - containerRect.top;
-    const relBottom = itemRect.bottom - containerRect.top;
-    const containerH = container.clientHeight;
-    const currentScrollTop = container.scrollTop;
-    if (relTop >= padding && relBottom <= containerH) return null;
-    if (relBottom > containerH) return currentScrollTop + (relBottom - containerH) + padding;
-    return currentScrollTop + relTop - padding;
-  }, [containerSel, padding]);
+async function getScrollTopToRevealInContainer(
+  page,
+  containerSel,
+  itemEl,
+  padding = 20,
+) {
+  return await itemEl.evaluate(
+    (item, [sel, padding]) => {
+      const container = document.querySelector(sel);
+      if (!container) return null;
+      const itemRect = item.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      const relTop = itemRect.top - containerRect.top;
+      const relBottom = itemRect.bottom - containerRect.top;
+      const containerH = container.clientHeight;
+      const currentScrollTop = container.scrollTop;
+      if (relTop >= padding && relBottom <= containerH) return null;
+      if (relBottom > containerH)
+        return currentScrollTop + (relBottom - containerH) + padding;
+      return currentScrollTop + relTop - padding;
+    },
+    [containerSel, padding],
+  );
 }
 
 async function smoothScroll(page, targetY, durationMs = 1200) {
@@ -96,10 +114,46 @@ async function smoothScroll(page, targetY, durationMs = 1200) {
   for (let i = 1; i <= steps; i++) {
     const t = i / steps;
     const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    await page.evaluate((y) => window.scrollTo(0, y), Math.round(startY + delta * ease));
+    await page.evaluate(
+      (y) => window.scrollTo(0, y),
+      Math.round(startY + delta * ease),
+    );
     await sleep(FRAME_MS);
   }
   await sleep(jitter(120));
+}
+
+async function injectCursorDot(page) {
+  if (!SHOW_CURSOR) return;
+  try {
+    await page.evaluate(([x, y]) => {
+      if (document.getElementById("__cursor-dot")) return;
+      const dot = document.createElement("div");
+      dot.id = "__cursor-dot";
+      dot.style.cssText = [
+        "position:fixed",
+        "width:8px",
+        "height:8px",
+        "border-radius:50%",
+        "background:rgba(0,0,0,0.7)",
+        "border:2px solid rgba(255,255,255,0.85)",
+        "pointer-events:none",
+        "z-index:2147483647",
+        "transform:translate(-50%,-50%)",
+      ].join(";");
+      dot.style.left = x + "px";
+      dot.style.top = y + "px";
+      document.body.appendChild(dot);
+      window.addEventListener(
+        "mousemove",
+        (e) => {
+          dot.style.left = e.clientX + "px";
+          dot.style.top = e.clientY + "px";
+        },
+        true,
+      );
+    }, [_mouseX, _mouseY]);
+  } catch {}
 }
 
 async function dismissPopups(page) {
@@ -142,16 +196,17 @@ async function getPageHeight(page) {
 // never snaps to top, always uses the same smooth eased animation
 async function scrollToElement(page, el, paddingTop = 80) {
   // Get all scroll data in one evaluate to avoid race conditions
-  const { rectTop, rectBottom, rectHeight, viewH, currentY } = await el.evaluate((node) => {
-    const rect = node.getBoundingClientRect();
-    return {
-      rectTop: rect.top,
-      rectBottom: rect.bottom,
-      rectHeight: rect.height,
-      viewH: window.innerHeight,
-      currentY: window.scrollY,
-    };
-  });
+  const { rectTop, rectBottom, rectHeight, viewH, currentY } =
+    await el.evaluate((node) => {
+      const rect = node.getBoundingClientRect();
+      return {
+        rectTop: rect.top,
+        rectBottom: rect.bottom,
+        rectHeight: rect.height,
+        viewH: window.innerHeight,
+        currentY: window.scrollY,
+      };
+    });
 
   // Skip hidden/zero-height elements
   if (rectHeight < 5) return;
@@ -276,20 +331,23 @@ async function runStep(page, step) {
         let scrollPromise = null;
         const isCascade = !!step.cascade;
 
-        if (isCascade) {
-          // Move to a neutral position so the first element gets a fresh mouseenter
-          await page.mouse.move(VIEWPORT.width / 2, VIEWPORT.height - 5);
-          await sleep(50);
-        }
-
         for (const { el } of withDocTop) {
           if (!isCascade) {
             if (step.scrollContainer) {
               const containerEl = await page.$(step.scrollContainer);
               if (containerEl) await scrollToElement(page, containerEl);
-              const targetScrollTop = await getScrollTopToRevealInContainer(page, step.scrollContainer, el);
+              const targetScrollTop = await getScrollTopToRevealInContainer(
+                page,
+                step.scrollContainer,
+                el,
+              );
               if (targetScrollTop !== null) {
-                await smoothScrollElement(page, step.scrollContainer, targetScrollTop, 600);
+                await smoothScrollElement(
+                  page,
+                  step.scrollContainer,
+                  targetScrollTop,
+                  600,
+                );
                 await sleep(80);
               }
             } else {
@@ -308,18 +366,28 @@ async function runStep(page, step) {
               scrollPromise = (async () => {
                 let target = step.triggerScroll.to;
                 if (target === "bottom") {
-                  target = await page.$eval(step.triggerScroll.selector, (el) => el.scrollHeight - el.clientHeight);
+                  target = await page.$eval(
+                    step.triggerScroll.selector,
+                    (el) => el.scrollHeight - el.clientHeight,
+                  );
                 }
-                await smoothScrollElement(page, step.triggerScroll.selector, target || 0, step.triggerScroll.duration || 1000);
+                await smoothScrollElement(
+                  page,
+                  step.triggerScroll.selector,
+                  target || 0,
+                  step.triggerScroll.duration || 1000,
+                );
               })();
               break;
             }
           }
 
           if (isCascade) {
-            // Snap directly to each element — no bezier curve — so hover states
-            // light up in rapid succession without movement overhead.
-            await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+            const cx = Math.round(box.x + box.width / 2);
+            const cy = Math.round(box.y + box.height / 2);
+            await page.mouse.move(cx, cy);
+            _mouseX = cx;
+            _mouseY = cy;
             await sleep(dwell);
           } else {
             await moveTo(page, box.x + box.width / 2, box.y + box.height / 2);
@@ -404,10 +472,18 @@ async function runStep(page, step) {
     case "scrollElement": {
       let targetScrollTop = to || 0;
       if (to === "bottom") {
-        targetScrollTop = await page.$eval(selector, (el) => el.scrollHeight - el.clientHeight);
+        targetScrollTop = await page.$eval(
+          selector,
+          (el) => el.scrollHeight - el.clientHeight,
+        );
       }
       console.log(`   → scrollElement: ${selector} to ${targetScrollTop}px`);
-      await smoothScrollElement(page, selector, targetScrollTop, duration || 1000);
+      await smoothScrollElement(
+        page,
+        selector,
+        targetScrollTop,
+        duration || 1000,
+      );
       break;
     }
 
@@ -457,6 +533,8 @@ async function runStep(page, step) {
       }
       const navWait = step.postNavigateWait ?? POST_NAVIGATE;
       await sleep(navWait);
+      await injectCursorDot(page);
+      await page.mouse.move(_mouseX, _mouseY);
       if (AUTO_DISMISS) await dismissPopups(page);
       await sleep(Math.round(navWait / 3));
       break;
@@ -694,36 +772,14 @@ function convertToMp4(webmPath, mp4Path) {
 
   const page = await context.newPage();
 
-  if (SHOW_CURSOR) {
-    await page.addInitScript(() => {
-      document.addEventListener('DOMContentLoaded', () => {
-        const dot = document.createElement('div');
-        dot.style.cssText = [
-          'position:fixed',
-          'width:16px',
-          'height:16px',
-          'border-radius:50%',
-          'background:rgba(0,0,0,0.7)',
-          'border:2px solid rgba(255,255,255,0.85)',
-          'pointer-events:none',
-          'z-index:2147483647',
-          'transform:translate(-50%,-50%)',
-          'left:-100px',
-          'top:-100px',
-        ].join(';');
-        document.documentElement.appendChild(dot);
-        document.addEventListener('mousemove', (e) => {
-          dot.style.left = e.clientX + 'px';
-          dot.style.top = e.clientY + 'px';
-        });
-      });
-    });
-  }
-
   console.log(`\n🎬 Recording: ${URL}`);
 
   await page.goto(URL, { waitUntil: "load", timeout: 30000 });
   await sleep(1500);
+  await injectCursorDot(page);
+  // Sync Playwright's actual cursor position with our tracker so the first moveTo
+  // computes bezier curves from the correct starting point
+  await page.mouse.move(_mouseX, _mouseY);
   if (AUTO_DISMISS) await dismissPopups(page);
   await sleep(500);
 
@@ -739,6 +795,7 @@ function convertToMp4(webmPath, mp4Path) {
     for (const link of navLinks) {
       try {
         await page.goto(link.href, { waitUntil: "load", timeout: 20000 });
+        await injectCursorDot(page);
         await autoRecordPage(page, link.text);
       } catch (err) {
         console.warn(
@@ -754,7 +811,9 @@ function convertToMp4(webmPath, mp4Path) {
 
   const files = fs
     .readdirSync(outputDir)
-    .filter((f) => f.endsWith(".webm") && path.join(outputDir, f) !== webmOutput);
+    .filter(
+      (f) => f.endsWith(".webm") && path.join(outputDir, f) !== webmOutput,
+    );
   if (files.length) {
     fs.renameSync(path.join(outputDir, files[0]), webmOutput);
     console.log(`✅ webm saved: ${webmOutput}`);

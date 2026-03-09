@@ -9,13 +9,6 @@
     { "type": "navigate", "url": "https://www.shirard.com/pages/about" },
 
     {
-      "type": "hoverAll",
-      "selector": ".pages-content-container > nav a",
-      "dwell": 200,
-      "cascade": true
-    },
-
-    {
       "type": "navigate",
       "url": "https://www.shirard.com/pages/services",
       "postNavigateWait": 100
