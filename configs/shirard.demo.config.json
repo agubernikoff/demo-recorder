@@ -15,9 +15,17 @@
       "cascade": true
     },
 
-    { "type": "navigate", "url": "https://www.shirard.com/pages/services" },
+    {
+      "type": "navigate",
+      "url": "https://www.shirard.com/pages/services",
+      "postNavigateWait": 100
+    },
 
-    { "type": "navigate", "url": "https://www.shirard.com/pages/brand" },
+    {
+      "type": "navigate",
+      "url": "https://www.shirard.com/pages/brand",
+      "postNavigateWait": 100
+    },
 
     { "type": "navigate", "url": "https://www.shirard.com/pages/press" },
 

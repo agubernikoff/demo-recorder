@@ -26,8 +26,10 @@ const OUTPUT = config.output || process.env.DEMO_OUTPUT || "demo";
 const VIEWPORT = config.viewport || { width: 1280, height: 800 };
 const HOVER_DWELL = config.hoverDwell || 900;
 const POST_SCROLL = config.postScrollWait || 1400;
+const POST_NAVIGATE = config.postNavigateWait ?? 1500;
 const STEPS = config.interactions || null;
 const AUTO_DISMISS = config.autoDismissPopups ?? true;
+const SHOW_CURSOR = config.showCursor ?? true;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -274,6 +276,12 @@ async function runStep(page, step) {
         let scrollPromise = null;
         const isCascade = !!step.cascade;
 
+        if (isCascade) {
+          // Move to a neutral position so the first element gets a fresh mouseenter
+          await page.mouse.move(VIEWPORT.width / 2, VIEWPORT.height - 5);
+          await sleep(50);
+        }
+
         for (const { el } of withDocTop) {
           if (!isCascade) {
             if (step.scrollContainer) {
@@ -437,7 +445,7 @@ async function runStep(page, step) {
         const box = await link.boundingBox();
         if (box)
           await moveTo(page, box.x + box.width / 2, box.y + box.height / 2);
-        await sleep(jitter(400));
+        await sleep(step.dwell ?? 80);
         console.log(`   → navigate (click): ${stepUrl}`);
         await Promise.all([
           page.waitForLoadState("load", { timeout: 20000 }),
@@ -447,9 +455,10 @@ async function runStep(page, step) {
         console.log(`   → navigate (goto): ${stepUrl}`);
         await page.goto(stepUrl, { waitUntil: "load", timeout: 20000 });
       }
-      await sleep(1500);
+      const navWait = step.postNavigateWait ?? POST_NAVIGATE;
+      await sleep(navWait);
       if (AUTO_DISMISS) await dismissPopups(page);
-      await sleep(500);
+      await sleep(Math.round(navWait / 3));
       break;
     }
 
@@ -684,6 +693,33 @@ function convertToMp4(webmPath, mp4Path) {
   });
 
   const page = await context.newPage();
+
+  if (SHOW_CURSOR) {
+    await page.addInitScript(() => {
+      document.addEventListener('DOMContentLoaded', () => {
+        const dot = document.createElement('div');
+        dot.style.cssText = [
+          'position:fixed',
+          'width:16px',
+          'height:16px',
+          'border-radius:50%',
+          'background:rgba(0,0,0,0.7)',
+          'border:2px solid rgba(255,255,255,0.85)',
+          'pointer-events:none',
+          'z-index:2147483647',
+          'transform:translate(-50%,-50%)',
+          'left:-100px',
+          'top:-100px',
+        ].join(';');
+        document.documentElement.appendChild(dot);
+        document.addEventListener('mousemove', (e) => {
+          dot.style.left = e.clientX + 'px';
+          dot.style.top = e.clientY + 'px';
+        });
+      });
+    });
+  }
+
   console.log(`\n🎬 Recording: ${URL}`);
 
   await page.goto(URL, { waitUntil: "load", timeout: 30000 });
